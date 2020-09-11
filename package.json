@@ -1,0 +1,39 @@
+{
+  "name": "mearnings",
+  "version": "1.0.0",
+  "description": "CLI tool for creating and verifying a Livepeer earnings merkle tree snapshot",
+  "main": "./lib/index.js",
+  "bin": {
+    "mearnings": "./lib/index.js"
+  },
+  "scripts": {
+    "start": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "create": "npm run build && npm run test",
+    "build": "tsc -p .",
+    "local": "sudo npm i -g && mearnings",
+    "refresh": "rm -rf ./node_modules ./package-lock.json && npm install"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-fetch": "^0.7.0",
+    "chalk": "^4.1.0",
+    "clear": "^0.1.0",
+    "cli-spinners": "^2.4.0",
+    "commander": "^6.1.0",
+    "dotenv": "^8.2.0",
+    "ethereumjs-abi": "github:ethereumjs/ethereumjs-abi#09c3c48fd3bed143df7fa8f36f6f164205e23796",
+    "ethereumjs-util": "^6.0.0",
+    "ethers": "^5.0.12",
+    "figlet": "^1.5.0",
+    "ora": "^5.1.0",
+    "path": "^0.12.7",
+    "web3": "^1.2.11"
+  },
+  "devDependencies": {
+    "@types/node": "^14.6.4",
+    "nodemon": "^2.0.4",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.2"
+  }
+}
