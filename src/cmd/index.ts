@@ -77,8 +77,6 @@ export async function generate() {
         let delegators = await oraPromise(getDelegators(), {text: "Fetching all delegators, this might take a while...", indent: 2})
         if (!delegators) return;
         delegators = delegators.filter(d => d.delegator != "0x0000000000000000000000000000000000000000" || d.delegator)
-        console.log(delegators[0], delegators[1])
-        console.log("del length", delegators.length)
         // generate merkle tree
         const treeSpinner = ora({text: "Generating Merkle Tree", indent: 2}).start()
         // const leaves = delegators.map(d => utils.defaultAbiCoder.encode(["address", "uint256", "uint256"], [d.delegator, d.pendingStake, d.pendingFees]))
