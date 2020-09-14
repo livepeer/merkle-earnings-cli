@@ -3,7 +3,7 @@ import {BigNumber, utils} from 'ethers'
 const { createApolloFetch } = require('apollo-fetch');
 
 const fetchSubgraph = createApolloFetch({
-    uri: `https://api.thegraph.com/subgraphs/name/livepeer/livepeer`,
+    uri: `${process.env.SUBGRAPH_URL}`,
   });
 
 export const getEarnings = async(address:string, endRound: BigNumber): Promise<{delegator: string, pendingStake: BigNumber, pendingFees: BigNumber}> => {
