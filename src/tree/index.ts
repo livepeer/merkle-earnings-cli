@@ -1,10 +1,5 @@
 const { keccak256, bufferToHex } = require('ethereumjs-util');
-import {BigNumber, utils} from 'ethers'
-
-export function generateDelegatorEarningsTree(delegators) {
-
-}
-
+import {utils} from 'ethers'
 
 export interface MerkleTree {
   elements:Array<any>,
