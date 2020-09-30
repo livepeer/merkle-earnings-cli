@@ -15,7 +15,6 @@ export const getEarnings = async(address:string, endRound: BigNumber): Promise<{
         }
         return earnings
     } catch(err) {
-        console.log(err)
         return err
     }
 }
@@ -49,10 +48,10 @@ export const getDelegators = async ():Promise<Array<string>> => {
   
 export async function getSnapshotRound ():Promise<BigNumber> {
     try {
-        if (process.env.SNAPSHOT_ROUND) {
+        if (process.env.SNAPSHOT_ROUND != "") {
             return BigNumber.from(process.env.SNAPSHOT_ROUND)
         } else {
-            return await roundsManager.LIPUpgradeRound(36)
+            return await roundsManager.lipUpgradeRound(BigNumber.from(36))
         }
     } catch (err) {
         return err
@@ -61,7 +60,7 @@ export async function getSnapshotRound ():Promise<BigNumber> {
 
 export async function getEarningsRoot() {
     try {
-        return await merkleSnapshot.snapshot(utils.keccak256("LIP-52"))
+        return await merkleSnapshot.snapshot(utils.keccak256(utils.toUtf8Bytes("LIP-52")))
     } catch(err) {
         return err
     }
@@ -69,7 +68,8 @@ export async function getEarningsRoot() {
 
 export async function verifyEarningsProof(proof, leaf) {
     try {
-        return await merkleSnapshot.verify(utils.keccak256("LIP-52"), proof, leaf)
+        const id = utils.keccak256(utils.toUtf8Bytes("LIP-52"))
+        return await merkleSnapshot.verify(id, proof, leaf)
     } catch(err) {
         return err
     }

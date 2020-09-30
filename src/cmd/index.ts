@@ -1,19 +1,15 @@
 const ora = require("ora")
 const cliSpinners = require('cli-spinners')
 const chalk = require('chalk')
-
+const prompt = require("prompt-sync")()
 const fs = require('fs').promises
 const path = require('path')
 const fsExists = require('fs').existsSync
 import {BigNumber, Wallet, utils} from 'ethers'
 
-const {keccak256, bufferToHex} = require("ethereumjs-util")
-let abi = require("ethereumjs-abi")
-
 import {getEarnings, getSnapshotRound, getDelegators, getEarningsRoot, verifyEarningsProof} from '../eth/rpc'
 import {EarningsTree} from '../tree'
-import { pathToFileURL } from 'url'
-import { merkleSnapshot, bondingManager } from '../eth/contracts'
+import { bondingManager } from '../eth/contracts'
 
 const formatEther = (value: BigNumber) => {
     return utils.commify(utils.formatEther(value))
@@ -33,7 +29,6 @@ const formatEther = (value: BigNumber) => {
             spinner.succeed();
             return returnVal
 		} catch (err) {
-            console.log(err)
             spinner.fail();
         }
 
@@ -57,9 +52,9 @@ export async function earnings(address:string) {
       spinner.succeed()
       console.log("\n")
   
-      console.log(chalk.green.bold(address))
-      console.log("Pending Stake:", formatEther(earnings.pendingStake), "LPT")
-      console.log("Pending Fees:", formatEther(earnings.pendingFees), "ETH")
+      console.log('    ', chalk.green.bold(address))
+      console.log('        ', "Pending Stake:", formatEther(earnings.pendingStake), "LPT")
+      console.log('        ', "Pending Fees:", formatEther(earnings.pendingFees), "ETH")
   
       console.log("\n")
       return earnings
@@ -93,6 +88,7 @@ export async function generate() {
 
         console.log("\n")
         console.log(chalk.green.bold("Merkle Root:"), tree.getHexRoot())
+        console.log("\n")
         return tree
     } catch(err) {
         console.log(err)
@@ -107,6 +103,7 @@ async function reconstructTree():Promise<EarningsTree|undefined> {
             const jsonFile = await fs.readFile("earningsTree.JSON")
             tree = EarningsTree.fromJSON(jsonFile)
             jsonSpinner.succeed()
+            return tree
         } catch(err) {
             jsonSpinner.fail()
             return
@@ -119,6 +116,35 @@ async function reconstructTree():Promise<EarningsTree|undefined> {
        }
     }
 }
+
+async function compareRoots(tree: EarningsTree|undefined) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!tree) {
+                reject("Tree is undefined")
+            }
+            const onChainRoot = await getEarningsRoot()
+            const localRoot = tree?.getHexRoot()
+            if (localRoot != onChainRoot) {
+                reject("roots don't match")
+            }
+            resolve({onChainRoot, localRoot})
+        } catch (err) {
+            reject(err)
+        }
+    })
+}
+
+async function generateProof(tree, leaf) {
+    return new Promise((resolve, reject) => {
+        const proof = tree?.getHexProof(leaf)
+        if (!proof) {
+           reject()
+        }
+        resolve(proof)
+    })
+}
+
 export async function verify(address:string) {
         // Get and log the earnings for an address
         const snapshotEarnings = await earnings(address)
@@ -126,41 +152,29 @@ export async function verify(address:string) {
         // reconstruct tree
         const tree = await reconstructTree()
 
-        // compare on chain merkle root with generated merkle root
-        let validateRootSpinner = ora({text: "Validating on-chain merkle root", indent: 2}).start()
-        const onChainRoot = await getEarningsRoot()
-        const localRoot = tree?.getHexRoot()
-        if (localRoot != onChainRoot) {
-            validateRootSpinner.fail()
-            return
-        }
-        validateRootSpinner.succeed()
+        const roots = await oraPromise(compareRoots(tree), {text: "Validating on-chain merkle root", indent: 2})
         console.log("\n")
-        console.log(`On-chain Merkle Root: ${onChainRoot}`)
-        console.log(`Local Merkle Root: ${localRoot}`)
+        console.log('    ',chalk.green.bold("On-chain Merkle Root:"), `${roots.onChainRoot}`)
+        console.log('    ', chalk.green.bold("Local Merkle Root:"), `${roots.localRoot}`)
         console.log("\n")
 
-        let proofSpinner = ora({text: "Generating merkle proof", indent: 2}).start()
+        // get leaf
         const leaf = utils.defaultAbiCoder.encode(["address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
-        const proof = tree?.getHexProof(leaf)
-        if (!proof) {
-            proofSpinner.fail()
-            return
-        }
-        proofSpinner.succeed()
-        console.log("\n", chalk.green.bold(`Merkle Proof for ${address}:`, proof))
+
+        // get proof
+        const proof = await oraPromise(generateProof(tree, leaf), {text: "Generating merkle proof", indent: 2})
+        console.log('\n')
+        console.log('    ',chalk.green.bold(`Merkle Proof for ${address}:`), proof)
+        console.log('\n')
 
         // Validate proof on chain 
-        await oraPromise(verifyEarningsProof(proof, utils.keccak256(leaf)), {text:"Verifying merkle proof on-chain", indent: 2})
+        await oraPromise(verifyEarningsProof(proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})
 }
 
-export async function claim(keystoreFile, password) {
-    let walletSpinner = ora({text: "Reading wallet file", indent: 2}).start()
-    if (!path.isAbsolute(keystoreFile)) {
-        console.log(chalk.red("Path to keystore file must be absolute"))
-        walletSpinner.fail()
-        return
-    }
+export async function claim(keystoreFile) {
+    let walletSpinner = ora({text: "Reading keystore file", indent: 2}).start()
+    keystoreFile = path.resolve(__dirname, keystoreFile)
+    console.log('    ',chalk.green.bold("Using keystore file:"), keystoreFile)
     let keystore
     try {
         keystore = await fs.readFile(keystoreFile)
@@ -168,27 +182,43 @@ export async function claim(keystoreFile, password) {
         walletSpinner.fail()
         return
     }
+
+    console.log('    ', chalk.green.bold("Please unlock your account"))
+    const password = prompt("Password: ", { echo: "" })
     walletSpinner.succeed()
 
-    const wallet = await oraPromise(Wallet.fromEncryptedJson(keystore, password), {text: "Decrypting wallet", indent: 2})
+    const wallet = await oraPromise(Wallet.fromEncryptedJson(keystore.toString(), password), {text: "Decrypting wallet", indent: 2})
 
-    wallet.connect(bondingManager.provider)
-    bondingManager.connect(wallet)
-
+    const walletWithProvider = wallet.connect(bondingManager.provider)
+    let bondingManagerWithSigner = bondingManager.connect(walletWithProvider)
+    
     // get earnings
     const snapshotEarnings = await earnings(wallet.address)
+
+    // get leaf
     const leaf = utils.defaultAbiCoder.encode(["address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
 
     // reconstruct tree 
     const tree = await reconstructTree()
-    const proof = tree?.getHexProof(leaf)
 
-    // verify proof for leaf
-    if (!await oraPromise(verifyEarningsProof(proof, utils.keccak256(leaf)), {text:"Verifying merkle proof on-chain", indent: 2})) return 
+    const roots = await oraPromise(compareRoots(tree), {text: "Validating on-chain merkle root", indent: 2})
+    console.log("\n")
+    console.log('    ',chalk.green.bold("On-chain Merkle Root:"), `${roots.onChainRoot}`)
+    console.log('    ', chalk.green.bold("Local Merkle Root:"), `${roots.localRoot}`)
+    console.log("\n")
+
+    // get proof
+    const proof = await oraPromise(generateProof(tree, leaf), {text: "Generating merkle proof", indent: 2})
+    console.log('\n')
+    console.log('    ',chalk.green.bold(`Merkle Proof for ${wallet.address}:`), proof)
+    console.log('\n')
+
+    // validate proof on chain
+    if (!await oraPromise(verifyEarningsProof(proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})) return 
 
     // submit claim transaction
     await oraPromise(
-        bondingManager.claimSnapshotEarnings(snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees, proof, []),
+        bondingManagerWithSigner.claimSnapshotEarnings(snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees, proof, []),
         {text: "claiming snapshot earnings", indent: 2}
     )
 }

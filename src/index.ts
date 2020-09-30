@@ -25,8 +25,6 @@ console.log(
   )
 );
 
-
-
 (async () => {
   program
 	.version('1.O.O')
@@ -34,11 +32,11 @@ console.log(
   .option('-g, --generate', 'Generate a new Earnings Merkle Tree at the snapshot round')
   .option('-e, --earnings <address>', 'Get earnings for an address up until the snapshot round')
   .option('-ve --verify <address>', 'Verify the merkle tree for an address')
-  .option('-c --claim <keystoreFile> <password>', 'Claim snapshot earnings')
+  .option('-c --claim <keystoreFilePath>', 'Claim snapshot earnings')
   .parse(process.argv)
   .outputHelp()
 
-  console.log("\n\n")
+  console.log("\n")
 
   if (program.earnings) {
     await earnings(program.earnings)
@@ -50,6 +48,6 @@ console.log(
     await verify(program.verify)
   }
   if (program.claim) {
-    await claim(program.claim, program.args[0])
+    await claim(program.claim)
   }
 })()
