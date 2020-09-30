@@ -31,8 +31,9 @@ $ npm install
 ## Build
 
 ```
-$ npm run build
+$ npm run build && npm i -g
 ```
+
 
 ## Run 
 ```
