@@ -32,7 +32,7 @@ console.log(
   .option('-g, --generate', 'Generate a new Earnings Merkle Tree at the snapshot round')
   .option('-e, --earnings <address>', 'Get earnings for an address up until the snapshot round')
   .option('-ve --verify <address>', 'Verify the merkle tree for an address')
-  .option('-c --claim <keystoreFilePath>', 'Claim snapshot earnings')
+  .option('-c --claim <keystoreFilePath>', 'Claim snapshot earnings (NOT AVAILABLE until LIP-52 is deployed)')
   .parse(process.argv)
   .outputHelp()
 
