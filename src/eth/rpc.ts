@@ -51,7 +51,7 @@ export async function getSnapshotRound ():Promise<BigNumber> {
         if (process.env.SNAPSHOT_ROUND != "") {
             return BigNumber.from(process.env.SNAPSHOT_ROUND)
         } else {
-            return await roundsManager.lipUpgradeRound(BigNumber.from(36))
+            return await roundsManager.lipUpgradeRound(BigNumber.from(52))
         }
     } catch (err) {
         return err
