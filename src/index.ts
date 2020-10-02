@@ -8,7 +8,7 @@ const clear = require('clear');
 const figlet = require('figlet');
 const program = require('commander');
 
-import {earnings, generate, verify, claim} from './cmd'
+import {earnings, generate, verify, claim, checkProvider} from './cmd'
 
 clear()
 console.log(
@@ -37,6 +37,16 @@ console.log(
   .outputHelp()
 
   console.log("\n")
+
+  if (process.env.ETH_RPC == "") {
+    console.log('    ',chalk.red.bold("Must define an Ethereum JSON-RPC provider"))
+    return
+  }
+
+  if (!(await checkProvider())) {
+    console.log('    ',chalk.red.bold("Invalid Ethereum JSON-RPC provider"))
+    return
+  }
 
   if (program.earnings) {
     await earnings(program.earnings)

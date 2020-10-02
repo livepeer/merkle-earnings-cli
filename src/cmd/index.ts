@@ -10,6 +10,8 @@ import {BigNumber, Wallet, utils} from 'ethers'
 import {getEarnings, getSnapshotRound, getDelegators, getEarningsRoot, verifyEarningsProof} from '../eth/rpc'
 import {EarningsTree} from '../tree'
 import { bondingManager } from '../eth/contracts'
+const provider = require('../eth/provider')
+
 
 const formatEther = (value: BigNumber) => {
     return utils.commify(utils.formatEther(value))
@@ -221,4 +223,13 @@ export async function claim(keystoreFile) {
         bondingManagerWithSigner.claimSnapshotEarnings(snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees, proof, []),
         {text: "claiming snapshot earnings", indent: 2}
     )
+}
+
+export async function checkProvider() {
+    try {
+        await provider.getNetwork()
+        return true
+    } catch (err) {
+        return false
+    }
 }
