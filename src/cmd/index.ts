@@ -70,7 +70,7 @@ export async function earnings(address:string) {
   
       console.log("\n")
       return earnings
-    } catch(err) {
+    } catch(err: any) {
       spinner.fail()
       console.log("\n")
       console.log(err.toString())
