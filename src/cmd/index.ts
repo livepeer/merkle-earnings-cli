@@ -17,6 +17,16 @@ const formatEther = (value: BigNumber) => {
     return utils.commify(utils.formatEther(value))
   }
 
+function promptUserInput(): string {
+    let input = prompt("Enter LIP version. eg: 'LIP-73': ");
+    // matches string LIP-0 to LIP-999
+    if(!input.match("^LIP-[0-9][0-9]{0,2}$")) {
+        console.log("Incorrect Input: please enter in this format 'LIP-XXX'\n");
+        input = promptUserInput()
+    }
+    return input
+}
+
  const oraPromise = async (action: Promise<any>, options: {}) => {
 	// eslint-disable-next-line promise/prefer-await-to-then
 	if (typeof action.then !== 'function') {
@@ -119,13 +129,13 @@ async function reconstructTree():Promise<EarningsTree|undefined> {
     }
 }
 
-async function compareRoots(tree: EarningsTree|undefined) {
+async function compareRoots(LIP: string, tree: EarningsTree|undefined) {
     return new Promise(async (resolve, reject) => {
         try {
             if (!tree) {
                 reject("Tree is undefined")
             }
-            const onChainRoot = await getEarningsRoot()
+            const onChainRoot = await getEarningsRoot(LIP)
             const localRoot = tree?.getHexRoot()
             if (localRoot != onChainRoot) {
                 reject("roots don't match")
@@ -152,9 +162,11 @@ export async function verify(address:string) {
         const snapshotEarnings = await earnings(address)
 
         // reconstruct tree
+        let LIPRound = promptUserInput();
+        
         const tree = await reconstructTree()
 
-        const roots = await oraPromise(compareRoots(tree), {text: "Validating on-chain merkle root", indent: 2})
+        const roots = await oraPromise(compareRoots(LIPRound, tree), {text: "Validating on-chain merkle root", indent: 2})
         console.log("\n")
         console.log('    ',chalk.green.bold("On-chain Merkle Root:"), `${roots.onChainRoot}`)
         console.log('    ', chalk.green.bold("Local Merkle Root:"), `${roots.localRoot}`)
@@ -170,7 +182,7 @@ export async function verify(address:string) {
         console.log('\n')
 
         // Validate proof on chain 
-        await oraPromise(verifyEarningsProof(proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})
+        await oraPromise(verifyEarningsProof(LIPRound, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})
 }
 
 export async function claim(keystoreFile) {
@@ -201,9 +213,11 @@ export async function claim(keystoreFile) {
     const leaf = utils.defaultAbiCoder.encode(["address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
 
     // reconstruct tree 
+    let LIPRound = promptUserInput();
+
     const tree = await reconstructTree()
 
-    const roots = await oraPromise(compareRoots(tree), {text: "Validating on-chain merkle root", indent: 2})
+    const roots = await oraPromise(compareRoots(LIPRound, tree), {text: "Validating on-chain merkle root", indent: 2})
     console.log("\n")
     console.log('    ',chalk.green.bold("On-chain Merkle Root:"), `${roots.onChainRoot}`)
     console.log('    ', chalk.green.bold("Local Merkle Root:"), `${roots.localRoot}`)
@@ -216,7 +230,7 @@ export async function claim(keystoreFile) {
     console.log('\n')
 
     // validate proof on chain
-    if (!await oraPromise(verifyEarningsProof(proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})) return 
+    if (!await oraPromise(verifyEarningsProof(LIPRound, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})) return 
 
     // submit claim transaction
     await oraPromise(
