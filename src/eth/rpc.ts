@@ -1,17 +1,23 @@
 import  {bondingManager, roundsManager, merkleSnapshot} from './contracts'
 import {BigNumber, utils} from 'ethers'
 const { createApolloFetch } = require('apollo-fetch');
+const provider = require('./provider')
 
 const fetchSubgraph = createApolloFetch({
     uri: `${process.env.SUBGRAPH_URL}`,
   });
 
 export const getEarnings = async(address:string, endRound: BigNumber): Promise<{delegator: string, pendingStake: BigNumber, pendingFees: BigNumber}> => {
+    const [pendingStake, pendingFees] = await Promise.all([
+        bondingManager.pendingStake(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") }),
+        bondingManager.pendingFees(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") })
+    ])
+    
     try {
         const earnings: {delegator: string, pendingStake: BigNumber, pendingFees: BigNumber} = {
             delegator: address,
-            pendingStake: await bondingManager.pendingStake(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") }),
-            pendingFees: await bondingManager.pendingFees(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") })
+            pendingStake,
+            pendingFees
         }
         return earnings
     } catch(err) {
@@ -30,6 +36,16 @@ const getDelegatorSnapshot = async (
     delegate,
   };
 };
+const isEOA = async (address: string) => {
+    return provider.getCode(address) === "0x"
+}
+
+const filterAddresses = async (arr) => {
+    const results = await Promise.all(
+        arr.map(item => isEOA(item.id))
+    );
+    return arr.filter((_v, index) => results[index]);
+}
 
 export const getDelegators = async ():Promise<Array<string>> => {
     try {
@@ -48,7 +64,9 @@ export const getDelegators = async ():Promise<Array<string>> => {
             }`,
           })).data.delegators
     
-          batch = await Promise.all(batch.map(d => getDelegatorSnapshot(d.id, d.delegate.id, snapshotRound)))
+          
+          const filteredBatch = await filterAddresses(batch)
+          batch = await Promise.all(filteredBatch.map(d => getDelegatorSnapshot(d.id, d.delegate.id, snapshotRound)))
       
           batchLength = batch.length 
           delegators.push(...batch)
