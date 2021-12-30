@@ -162,11 +162,11 @@ export async function verify(address:string) {
         const snapshotEarnings = await earnings(address)
 
         // reconstruct tree
-        let LIPRound = promptUserInput();
+        let LIP = promptUserInput();
         
         const tree = await reconstructTree()
 
-        const roots = await oraPromise(compareRoots(LIPRound, tree), {text: "Validating on-chain merkle root", indent: 2})
+        const roots = await oraPromise(compareRoots(LIP, tree), {text: "Validating on-chain merkle root", indent: 2})
         console.log("\n")
         console.log('    ',chalk.green.bold("On-chain Merkle Root:"), `${roots.onChainRoot}`)
         console.log('    ', chalk.green.bold("Local Merkle Root:"), `${roots.localRoot}`)
@@ -182,7 +182,7 @@ export async function verify(address:string) {
         console.log('\n')
 
         // Validate proof on chain 
-        await oraPromise(verifyEarningsProof(LIPRound, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})
+        await oraPromise(verifyEarningsProof(LIP, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})
 }
 
 export async function claim(keystoreFile) {
@@ -213,11 +213,11 @@ export async function claim(keystoreFile) {
     const leaf = utils.defaultAbiCoder.encode(["address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
 
     // reconstruct tree 
-    let LIPRound = promptUserInput();
+    let LIP = promptUserInput();
 
     const tree = await reconstructTree()
 
-    const roots = await oraPromise(compareRoots(LIPRound, tree), {text: "Validating on-chain merkle root", indent: 2})
+    const roots = await oraPromise(compareRoots(LIP, tree), {text: "Validating on-chain merkle root", indent: 2})
     console.log("\n")
     console.log('    ',chalk.green.bold("On-chain Merkle Root:"), `${roots.onChainRoot}`)
     console.log('    ', chalk.green.bold("Local Merkle Root:"), `${roots.localRoot}`)
@@ -230,7 +230,7 @@ export async function claim(keystoreFile) {
     console.log('\n')
 
     // validate proof on chain
-    if (!await oraPromise(verifyEarningsProof(LIPRound, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})) return 
+    if (!await oraPromise(verifyEarningsProof(LIP, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})) return 
 
     // submit claim transaction
     await oraPromise(

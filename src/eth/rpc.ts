@@ -58,17 +58,17 @@ export async function getSnapshotRound ():Promise<BigNumber> {
     }
 }
 
-export async function getEarningsRoot(LIPRound: string) {
+export async function getEarningsRoot(LIP: string) {
     try {
-        return await merkleSnapshot.snapshot(utils.keccak256(utils.toUtf8Bytes(LIPRound)))
+        return await merkleSnapshot.snapshot(utils.keccak256(utils.toUtf8Bytes(LIP)))
     } catch(err) {
         return err
     }
 }
 
-export async function verifyEarningsProof(LIPRound: string, proof, leaf) {
+export async function verifyEarningsProof(LIP: string, proof, leaf) {
     try {
-        const id = utils.keccak256(utils.toUtf8Bytes(LIPRound))
+        const id = utils.keccak256(utils.toUtf8Bytes(LIP))
         return await merkleSnapshot.verify(id, proof, leaf)
     } catch(err) {
         return err
