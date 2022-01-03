@@ -40,9 +40,13 @@ const isEOA = async (address: string) => {
     return provider.getCode(address) === "0x"
 }
 
+const isOrchestrator = async (item) => {
+    return item.id === item.delegate.id;
+}
+
 const filterAddresses = async (arr) => {
     const results = await Promise.all(
-        arr.map(item => isEOA(item.id))
+        arr.map(item => (isEOA(item.id) || !isOrchestrator(item)))
     );
     return arr.filter((_v, index) => results[index]);
 }
