@@ -14,7 +14,7 @@ export const getEarnings = async(address:string, endRound: BigNumber): Promise<{
             pendingFees: await bondingManager.pendingFees(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") })
         }
         return earnings
-    } catch(err) {
+    } catch(err: any) {
         return err
     }
 }
@@ -41,7 +41,7 @@ export const getDelegators = async ():Promise<Array<string>> => {
           setTimeout(() => {}, 1000)
         } while(batchLength == 100)
         return delegators
-    } catch(err) {
+    } catch(err: any) {
         return err
     }
   }
@@ -53,22 +53,22 @@ export async function getSnapshotRound ():Promise<BigNumber> {
         } else {
             return await roundsManager.lipUpgradeRound(BigNumber.from(52))
         }
-    } catch (err) {
+    } catch (err: any) {
         return err
     }
 }
 
-export async function getEarningsRoot() {
+export async function getEarningsRoot(LIP: string) {
     try {
-        return await merkleSnapshot.snapshot(utils.keccak256(utils.toUtf8Bytes("LIP-52")))
+        return await merkleSnapshot.snapshot(utils.keccak256(utils.toUtf8Bytes(LIP)))
     } catch(err) {
         return err
     }
 }
 
-export async function verifyEarningsProof(proof, leaf) {
+export async function verifyEarningsProof(LIP: string, proof, leaf) {
     try {
-        const id = utils.keccak256(utils.toUtf8Bytes("LIP-52"))
+        const id = utils.keccak256(utils.toUtf8Bytes(LIP))
         return await merkleSnapshot.verify(id, proof, leaf)
     } catch(err) {
         return err
