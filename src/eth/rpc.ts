@@ -6,11 +6,10 @@ const fetchSubgraph = createApolloFetch({
     uri: `${process.env.SUBGRAPH_URL}`,
   });
 
-export const getEarnings = async(address:string, endRound: BigNumber, delegateAddr?: string): Promise<{delegator: string, delegate: string, pendingStake: BigNumber, pendingFees: BigNumber}> => {
+export const getEarnings = async(address:string, endRound: BigNumber): Promise<{delegator: string, pendingStake: BigNumber, pendingFees: BigNumber}> => {
     try {
-        const earnings: {delegator: string, delegate: string, pendingStake: BigNumber, pendingFees: BigNumber} = {
+        const earnings: {delegator: string, pendingStake: BigNumber, pendingFees: BigNumber} = {
             delegator: address,
-            delegate: delegateAddr || "",
             pendingStake: await bondingManager.pendingStake(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") }),
             pendingFees: await bondingManager.pendingFees(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") })
         }
@@ -19,6 +18,18 @@ export const getEarnings = async(address:string, endRound: BigNumber, delegateAd
         return err
     }
 }
+
+const getDelegatorSnapshot = async (
+    delegator: string,
+    delegate: string,
+    snapshotRound: BigNumber,
+) => {
+  const earnings = await getEarnings(delegator, snapshotRound);
+  return {
+    ...earnings,
+    delegate,
+  };
+};
 
 export const getDelegators = async ():Promise<Array<string>> => {
     try {
@@ -37,7 +48,7 @@ export const getDelegators = async ():Promise<Array<string>> => {
             }`,
           })).data.delegators
     
-          batch = await Promise.all(batch.map(d => getEarnings(d.id, snapshotRound, d.delegate.id)))
+          batch = await Promise.all(batch.map(d => getDelegatorSnapshot(d.id, d.delegate.id, snapshotRound)))
       
           batchLength = batch.length 
           delegators.push(...batch)
