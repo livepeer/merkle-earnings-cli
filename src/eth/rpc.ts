@@ -37,16 +37,20 @@ const getDelegatorSnapshot = async (
   };
 };
 const isEOA = async (address: string) => {
-    return provider.getCode(address) === "0x"
+    return (await provider.getCode(address)) === "0x"
 }
 
-const isOrchestrator = async (item) => {
+const isOrchestrator = (item) => {
     return item.id === item.delegate.id;
 }
 
 const filterAddresses = async (arr) => {
+    // remove orchestrators
+    const noOrchs = arr.filter(item => !isOrchestrator(item))
+
+    // remove contract accounts
     const results = await Promise.all(
-        arr.map(item => (isEOA(item.id) || !isOrchestrator(item)))
+        noOrchs.map(item => isEOA(item.id))
     );
     return arr.filter((_v, index) => results[index]);
 }
