@@ -1,22 +1,58 @@
 import  {bondingManager, roundsManager, merkleSnapshot} from './contracts'
 import {BigNumber, utils} from 'ethers'
 const { createApolloFetch } = require('apollo-fetch');
+const provider = require('./provider')
 
 const fetchSubgraph = createApolloFetch({
     uri: `${process.env.SUBGRAPH_URL}`,
   });
 
 export const getEarnings = async(address:string, endRound: BigNumber): Promise<{delegator: string, pendingStake: BigNumber, pendingFees: BigNumber}> => {
+    const [pendingStake, pendingFees] = await Promise.all([
+        bondingManager.pendingStake(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") }),
+        bondingManager.pendingFees(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") })
+    ])
+    
     try {
         const earnings: {delegator: string, pendingStake: BigNumber, pendingFees: BigNumber} = {
             delegator: address,
-            pendingStake: await bondingManager.pendingStake(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") }),
-            pendingFees: await bondingManager.pendingFees(address, endRound, { gasLimit: BigNumber.from("1000000000000000000") })
+            pendingStake,
+            pendingFees
         }
         return earnings
     } catch(err: any) {
         return err
     }
+}
+
+const getDelegatorSnapshot = async (
+    delegator: string,
+    delegate: string,
+    snapshotRound: BigNumber,
+) => {
+  const earnings = await getEarnings(delegator, snapshotRound);
+  return {
+    ...earnings,
+    delegate,
+  };
+};
+const isEOA = async (address: string) => {
+    return (await provider.getCode(address)) === "0x"
+}
+
+const isOrchestrator = (item) => {
+    return item.id === item.delegate.id;
+}
+
+const filterAddresses = async (arr) => {
+    // remove orchestrators
+    const noOrchs = arr.filter(item => !isOrchestrator(item))
+
+    // remove contract accounts
+    const results = await Promise.all(
+        noOrchs.map(item => isEOA(item.id))
+    );
+    return arr.filter((_v, index) => results[index]);
 }
 
 export const getDelegators = async ():Promise<Array<string>> => {
@@ -28,12 +64,17 @@ export const getDelegators = async ():Promise<Array<string>> => {
           let batch = (await fetchSubgraph({
             query: `{
               delegators(skip: ${delegators.length}, where:{ bondedAmount_not: 0 }) {
-                id
+                id,
+                delegate {
+                    id
+                }
               }
             }`,
           })).data.delegators
     
-          batch = await Promise.all(batch.map(d => getEarnings(d.id, snapshotRound)))
+          
+          const filteredBatch = await filterAddresses(batch)
+          batch = await Promise.all(filteredBatch.map(d => getDelegatorSnapshot(d.id, d.delegate.id, snapshotRound)))
       
           batchLength = batch.length 
           delegators.push(...batch)
