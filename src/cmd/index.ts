@@ -10,7 +10,7 @@ import {BigNumber, Wallet, utils} from 'ethers'
 import {getEarnings, getSnapshotRound, getDelegators, getEarningsRoot, verifyEarningsProof} from '../eth/rpc'
 import {EarningsTree} from '../tree'
 import { bondingManager } from '../eth/contracts'
-const provider = require('../eth/provider')
+const { l1Provider, l2Provider } = require('../eth/provider')
 
 
 const formatEther = (value: BigNumber) => {
@@ -241,7 +241,8 @@ export async function claim(keystoreFile) {
 
 export async function checkProvider() {
     try {
-        await provider.getNetwork()
+        await l1Provider.getNetwork()
+        await l2Provider.getNetwork()
         return true
     } catch (err) {
         return false

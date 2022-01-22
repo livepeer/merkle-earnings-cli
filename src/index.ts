@@ -38,8 +38,13 @@ console.log(
 
   console.log("\n")
 
-  if (process.env.ETH_RPC == "") {
-    console.log('    ',chalk.red.bold("Must define an Ethereum JSON-RPC provider"))
+  if (process.env.L1_ETH_RPC == "") {
+    console.log('    ',chalk.red.bold("Must define a L1 Ethereum JSON-RPC provider"))
+    return
+  }
+
+  if (process.env.L2_ETH_RPC == "") {
+    console.log('    ',chalk.red.bold("Must define a L2 Ethereum JSON-RPC provider"))
     return
   }
 

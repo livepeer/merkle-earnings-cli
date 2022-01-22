@@ -52,7 +52,7 @@ const filterAddresses = async (arr) => {
     const results = await Promise.all(
         noOrchs.map(item => isEOA(item.id))
     );
-    return arr.filter((_v, index) => results[index]);
+    return noOrchs.filter((_v, index) => results[index]);
 }
 
 export const getDelegators = async ():Promise<Array<string>> => {
