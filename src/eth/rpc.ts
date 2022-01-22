@@ -1,4 +1,4 @@
-import  {bondingManager, roundsManager, merkleSnapshot} from './contracts'
+import  {bondingManager, merkleSnapshot} from './contracts'
 import {BigNumber, utils} from 'ethers'
 const { createApolloFetch } = require('apollo-fetch');
 const provider = require('./provider')
@@ -88,15 +88,7 @@ export const getDelegators = async ():Promise<Array<string>> => {
   }
   
 export async function getSnapshotRound ():Promise<BigNumber> {
-    try {
-        if (process.env.SNAPSHOT_ROUND != "") {
-            return BigNumber.from(process.env.SNAPSHOT_ROUND)
-        } else {
-            return await roundsManager.lipUpgradeRound(BigNumber.from(52))
-        }
-    } catch (err: any) {
-        return err
-    }
+    return BigNumber.from(process.env.SNAPSHOT_ROUND)
 }
 
 export async function getEarningsRoot(LIP: string) {
