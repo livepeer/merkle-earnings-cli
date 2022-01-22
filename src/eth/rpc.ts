@@ -1,7 +1,7 @@
 import  {bondingManager, merkleSnapshot} from './contracts'
 import {BigNumber, utils} from 'ethers'
 const { createApolloFetch } = require('apollo-fetch');
-const provider = require('./provider')
+const { l1Provider } = require('./provider')
 
 const fetchSubgraph = createApolloFetch({
     uri: `${process.env.SUBGRAPH_URL}`,
@@ -37,7 +37,7 @@ const getDelegatorSnapshot = async (
   };
 };
 const isEOA = async (address: string) => {
-    return (await provider.getCode(address)) === "0x"
+    return (await l1Provider.getCode(address)) === "0x"
 }
 
 const isOrchestrator = (item) => {
