@@ -25,7 +25,15 @@ export const getEarnings = async(address:string, endRound: BigNumber): Promise<{
     }
 }
 
-const getDelegatorSnapshot = async (
+export const getDelegatorSnapshot = async (
+    delegator: string,
+    snapshotRound: BigNumber
+) => {
+    const delegate = (await bondingManager.getDelegator(delegator)).delegateAddress
+    return await getDelegatorSnapshotWithDelegate(delegator, delegate, snapshotRound)
+}
+
+const getDelegatorSnapshotWithDelegate = async (
     delegator: string,
     delegate: string,
     snapshotRound: BigNumber,
@@ -36,6 +44,7 @@ const getDelegatorSnapshot = async (
     delegate,
   };
 };
+
 const isEOA = async (address: string) => {
     return (await l1Provider.getCode(address)) === "0x"
 }
@@ -74,7 +83,7 @@ export const getDelegators = async ():Promise<Array<string>> => {
     
           
           const filteredBatch = await filterAddresses(batch)
-          batch = await Promise.all(filteredBatch.map(d => getDelegatorSnapshot(d.id, d.delegate.id, snapshotRound)))
+          batch = await Promise.all(filteredBatch.map(d => getDelegatorSnapshotWithDelegate(d.id, d.delegate.id, snapshotRound)))
       
           batchLength = batch.length 
           delegators.push(...batch)

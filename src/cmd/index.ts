@@ -7,7 +7,7 @@ const path = require('path')
 const fsExists = require('fs').existsSync
 import {BigNumber, Wallet, utils} from 'ethers'
 
-import {getEarnings, getSnapshotRound, getDelegators, getEarningsRoot, verifyEarningsProof} from '../eth/rpc'
+import {getDelegatorSnapshot, getSnapshotRound, getDelegators, getEarningsRoot, verifyEarningsProof} from '../eth/rpc'
 import {EarningsTree} from '../tree'
 import { bondingManager } from '../eth/contracts'
 const { l1Provider, l2Provider } = require('../eth/provider')
@@ -60,16 +60,17 @@ export async function earnings(address:string) {
 
     try {
       const endRound = await getSnapshotRound()
-      const earnings = await getEarnings(address, endRound)
+      const snapshot = await getDelegatorSnapshot(address, endRound)
       spinner.succeed()
       console.log("\n")
   
       console.log('    ', chalk.green.bold(address))
-      console.log('        ', "Pending Stake:", formatEther(earnings.pendingStake), "LPT")
-      console.log('        ', "Pending Fees:", formatEther(earnings.pendingFees), "ETH")
+      console.log('        ', "Delegate:", snapshot.delegate)
+      console.log('        ', "Pending Stake:", formatEther(snapshot.pendingStake), "LPT")
+      console.log('        ', "Pending Fees:", formatEther(snapshot.pendingFees), "ETH")
   
       console.log("\n")
-      return earnings
+      return snapshot 
     } catch(err: any) {
       spinner.fail()
       console.log("\n")
@@ -173,7 +174,7 @@ export async function verify(address:string) {
         console.log("\n")
 
         // get leaf
-        const leaf = utils.defaultAbiCoder.encode(["address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
+        const leaf = utils.defaultAbiCoder.encode(["address", "address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.delegate, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
 
         // get proof
         const proof = await oraPromise(generateProof(tree, leaf), {text: "Generating merkle proof", indent: 2})
