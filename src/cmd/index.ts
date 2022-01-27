@@ -81,15 +81,11 @@ export async function earnings(address:string) {
 
 export async function generate() {
     try {
-        const round = await getSnapshotRound()
         let delegators = await oraPromise(getDelegators(), {text: "Fetching all delegators, this might take a while...", indent: 2})
         if (!delegators) return;
         delegators = delegators.filter(d => d.delegator != "0x0000000000000000000000000000000000000000" || d.delegator)
         // generate merkle tree
         const treeSpinner = ora({text: "Generating Merkle Tree", indent: 2}).start()
-        // const leaves = delegators.map(d => utils.defaultAbiCoder.encode(["address", "uint256", "uint256"], [d.delegator, d.pendingStake, d.pendingFees]))
-        // console.log(leaves)
-        // const tree = new MerkleTree(leaves)
         const tree = new EarningsTree(delegators)
         if (!tree) {
             treeSpinner.fail()
