@@ -174,7 +174,7 @@ export async function verify(address:string) {
         console.log("\n")
 
         // get leaf
-        const leaf = utils.defaultAbiCoder.encode(["address", "address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.delegate, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
+        const leaf = utils.solidityPack(["address", "address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.delegate, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
 
         // get proof
         const proof = await oraPromise(generateProof(tree, leaf), {text: "Generating merkle proof", indent: 2})
@@ -211,7 +211,7 @@ export async function claim(keystoreFile) {
     const snapshotEarnings = await earnings(wallet.address)
 
     // get leaf
-    const leaf = utils.defaultAbiCoder.encode(["address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
+    const leaf = utils.solidityPack(["address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
 
     // reconstruct tree 
     let LIP = promptUserInput();
