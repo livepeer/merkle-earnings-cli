@@ -1,5 +1,5 @@
 import  {bondingManager, merkleSnapshot} from './contracts'
-import {BigNumber, utils} from 'ethers'
+import {BigNumber, constants, utils} from 'ethers'
 const { createApolloFetch } = require('apollo-fetch');
 const { l1Provider } = require('./provider')
 
@@ -41,7 +41,8 @@ const getDelegatorSnapshotWithDelegate = async (
   const earnings = await getEarnings(delegator, snapshotRound);
   return {
     ...earnings,
-    delegate,
+    // delegate could be null
+    delegate: delegate ? delegate : constants.AddressZero,
   };
 };
 
@@ -50,7 +51,8 @@ const isEOA = async (address: string) => {
 }
 
 const isOrchestrator = (item) => {
-    return item.id === item.delegate.id;
+    // delegate could be null
+    return item.id === item.delegate?.id;
 }
 
 const filterAddresses = async (arr) => {
@@ -72,7 +74,7 @@ export const getDelegators = async ():Promise<Array<string>> => {
         do {
           let batch = (await fetchSubgraph({
             query: `{
-              delegators(skip: ${delegators.length}, where:{ bondedAmount_not: 0 }) {
+              delegators(skip: ${delegators.length}) {
                 id,
                 delegate {
                     id
@@ -80,10 +82,9 @@ export const getDelegators = async ():Promise<Array<string>> => {
               }
             }`,
           })).data.delegators
-    
-          
+
           const filteredBatch = await filterAddresses(batch)
-          batch = await Promise.all(filteredBatch.map(d => getDelegatorSnapshotWithDelegate(d.id, d.delegate.id, snapshotRound)))
+          batch = await Promise.all(filteredBatch.map(d => getDelegatorSnapshotWithDelegate(d.id, d.delegate?.id, snapshotRound)))
       
           batchLength = batch.length 
           delegators.push(...batch)
