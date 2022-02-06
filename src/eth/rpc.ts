@@ -71,10 +71,11 @@ export const getDelegators = async ():Promise<Array<string>> => {
         let snapshotRound = await getSnapshotRound()
         let delegators: Array<string> = []
         let batchLength
+        let skip = 0
         do {
           let batch = (await fetchSubgraph({
             query: `{
-              delegators(skip: ${delegators.length}) {
+              delegators(skip: ${skip}) {
                 id,
                 delegate {
                     id
@@ -83,10 +84,13 @@ export const getDelegators = async ():Promise<Array<string>> => {
             }`,
           })).data.delegators
 
+          // Get # delegators returned in subgraph response before filtering
+          batchLength = batch.length
+          skip += batchLength
+
           const filteredBatch = await filterAddresses(batch)
           batch = await Promise.all(filteredBatch.map(d => getDelegatorSnapshotWithDelegate(d.id, d.delegate?.id, snapshotRound)))
       
-          batchLength = batch.length 
           delegators.push(...batch)
           // throttle to not timeout
           setTimeout(() => {}, 1000)
