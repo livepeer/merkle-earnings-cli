@@ -36,36 +36,44 @@ $ npm run build && npm i -g
 If you run into permissioning errors using `sudo npm i -g` can provide a shortcut without having to alter npm permissioning.
 
 ## Run 
+
+You will need to set the following environment variables in the `.env` file in this directory:
+
+- `L1_RPC_URL`: The URL for a L1 Ethereum Mainnet JSON-RPC provider.
+- `L2_RPC_URL`: THe URL for a L2 Arbitrum One Mainnet JSON-RPC provider.
+
 ```
 $ mearnings [options]
 ```
 
+To list usage options:
+
+```
+$ mearnings --help
+```
+
 ## Usage 
 
-### `mearnings --help` 
+There will be a prompt for a LIP number for the following commands. You can enter LIP-73.
 
-Lists usage options 
+### Generate the snapshot Merkle Tree
 
-### `mearnings -g`
+`mearnings -g`
 
-Generates a new earnings Merkle Tree at the snapshot round (using `.env` or using the snapshot round stored on-chain)
+Generates a new earnings Merkle Tree at the L1 snapshot round. The root of this snapshot Merkle Tree will be printed.
 
-### `mearnings -e <address>`
+### Fetch the earnings (pending stake and pending fees) of an address
 
-Gets the `pendingStake` and `pendingFees` for an address at the snapshot round. This will be the previous stake and fees plus any subsequent earnings since the last claim round. 
+`mearnings -e <address>`
 
-`<address>` = your (or an) Ethereum address
+- `<address>` is an ETH address that you want to fetch earnings for
 
-### `mearnings -ve <address>`
+Fetches the `pendingStake` (the stake of the address plus any rewards) and `pendingFees` (the fees of the address that have not been withdrawn) for an address at the L1 snapshot round. 
 
-Verifies that an address and its earnings are part of the Merkle tree. This requires a local merkle tree (`earningsTree.JSON` to be present in the root of the folder) to generate the necessary proofs that are then verified on-chain. 
+### Verify that an address is included in the snapshot Merkle Tree
 
-## FAQ 
+`mearnings -ve <address>`
 
-- Where can I find more information about this tool? 
+- `<address>` is an ETH address that you want to verify is included in the snapshot Merkle tree
 
-Please check [this Livepeer forum post](https://forum.livepeer.org/t/lip-52-verify-the-snapshot-for-yourself/1153)
-
-- What if there is no `earningsTree.JSON`file in the root folder? 
-
-Either pull down the latest master branch which will include this or generate it yourself (for the snapshot round) using `mearnings -g`. 
+Verifies that an address and its earnings are included in the snapshot Merkle tree. This command will use the leaves of the snapshot Merkle Tree ( in `earningsTree.JSON`) to re-generate the snapshot Merkle Tree, check that the root matches the one included on-chain in the L2 MerkleSnapshot contract and that a proof of inclusion in the Merkle Tree can be computed for the address.
