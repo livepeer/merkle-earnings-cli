@@ -8,7 +8,7 @@ const clear = require('clear');
 const figlet = require('figlet');
 const program = require('commander');
 
-import {earnings, generate, verify, claim, checkProvider} from './cmd'
+import {earnings, generate, verify, checkProvider} from './cmd'
 
 clear()
 console.log(
@@ -32,7 +32,6 @@ console.log(
   .option('-g, --generate', 'Generate a new Earnings Merkle Tree at the snapshot round')
   .option('-e, --earnings <address>', 'Get earnings for an address up until the snapshot round')
   .option('-ve --verify <address>', 'Verify the merkle tree for an address')
-  .option('-c --claim <keystoreFilePath>', 'Claim snapshot earnings')
   .parse(process.argv)
   .outputHelp()
 
@@ -61,8 +60,5 @@ console.log(
   }
   if (program.verify) {
     await verify(program.verify)
-  }
-  if (program.claim) {
-    await claim(program.claim)
   }
 })()

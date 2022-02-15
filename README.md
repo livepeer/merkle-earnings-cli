@@ -18,7 +18,6 @@ Options:
   -g, --generate                        Generate a new Earnings Merkle Tree at the snapshot round
   -e, --earnings <address>              Get earnings for an address up until the snapshot round
   -ve --verify <address>                Verify the merkle tree for an address
-  -c --claim <keystoreFile>             Claim snapshot earnings
   -h, --help
 ```
 
@@ -60,12 +59,6 @@ Gets the `pendingStake` and `pendingFees` for an address at the snapshot round. 
 ### `mearnings -ve <address>`
 
 Verifies that an address and its earnings are part of the Merkle tree. This requires a local merkle tree (`earningsTree.JSON` to be present in the root of the folder) to generate the necessary proofs that are then verified on-chain. 
-
-### `mearnings -c <keystoreFile>`
-
-Claims earnings using the snapshot mechanic up until the snapshot round. Requires the path to your keystore file as an argument after which you will be prompted for your password. 
-
-This requires a local merkle tree (`earningsTree.JSON` to be present in the root of the folder) to generate the necessary proofs that are then verified on-chain. 
 
 ## FAQ 
 

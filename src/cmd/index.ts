@@ -3,13 +3,11 @@ const cliSpinners = require('cli-spinners')
 const chalk = require('chalk')
 const prompt = require("prompt-sync")()
 const fs = require('fs').promises
-const path = require('path')
 const fsExists = require('fs').existsSync
-import {BigNumber, Wallet, utils} from 'ethers'
+import {BigNumber, utils} from 'ethers'
 
 import {getDelegatorSnapshot, getSnapshotRound, getDelegators, getEarningsRoot, verifyEarningsProof} from '../eth/rpc'
 import {EarningsTree} from '../tree'
-import { bondingManager } from '../eth/contracts'
 const { l1Provider, l2Provider } = require('../eth/provider')
 
 
@@ -191,60 +189,6 @@ export async function verify(address:string) {
         console.log('\n')
         console.log(`${address} included in snapshot`)
         console.log('\n')
-}
-
-export async function claim(keystoreFile) {
-    let walletSpinner = ora({text: "Reading keystore file", indent: 2}).start()
-    keystoreFile = path.resolve(__dirname, keystoreFile)
-    console.log('    ',chalk.green.bold("Using keystore file:"), keystoreFile)
-    let keystore
-    try {
-        keystore = await fs.readFile(keystoreFile)
-    } catch(err) {
-        walletSpinner.fail()
-        return
-    }
-
-    console.log('    ', chalk.green.bold("Please unlock your account"))
-    const password = prompt("Password: ", { echo: "" })
-    walletSpinner.succeed()
-
-    const wallet = await oraPromise(Wallet.fromEncryptedJson(keystore.toString(), password), {text: "Decrypting wallet", indent: 2})
-
-    const walletWithProvider = wallet.connect(bondingManager.provider)
-    let bondingManagerWithSigner = bondingManager.connect(walletWithProvider)
-    
-    // get earnings
-    const snapshotEarnings = await earnings(wallet.address)
-
-    // get leaf
-    const leaf = utils.solidityPack(["address", "uint256", "uint256"], [snapshotEarnings?.delegator, snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees])
-
-    // reconstruct tree 
-    let LIP = promptUserInput();
-
-    const tree = await reconstructTree()
-
-    const roots = await oraPromise(compareRoots(LIP, tree), {text: "Validating on-chain merkle root", indent: 2})
-    console.log("\n")
-    console.log('    ',chalk.green.bold("On-chain Merkle Root:"), `${roots.onChainRoot}`)
-    console.log('    ', chalk.green.bold("Local Merkle Root:"), `${roots.localRoot}`)
-    console.log("\n")
-
-    // get proof
-    const proof = await oraPromise(generateProof(tree, leaf), {text: "Generating merkle proof", indent: 2})
-    console.log('\n')
-    console.log('    ',chalk.green.bold(`Merkle Proof for ${wallet.address}:`), proof)
-    console.log('\n')
-
-    // validate proof on chain
-    if (!await oraPromise(verifyEarningsProof(LIP, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})) return 
-
-    // submit claim transaction
-    await oraPromise(
-        bondingManagerWithSigner.claimSnapshotEarnings(snapshotEarnings?.pendingStake, snapshotEarnings?.pendingFees, proof, []),
-        {text: "claiming snapshot earnings", indent: 2}
-    )
 }
 
 export async function checkProvider() {
