@@ -165,6 +165,6 @@ export class EarningsTree extends MerkleTree {
   }
 
   toJSON() {
-    return JSON.stringify(this.leaves)
+    return JSON.stringify(this.leaves, null, 4)
   }
 }
