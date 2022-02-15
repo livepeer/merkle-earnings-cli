@@ -174,12 +174,23 @@ export async function verify(address:string) {
 
         // get proof
         const proof = await oraPromise(generateProof(tree, leaf), {text: "Generating merkle proof", indent: 2})
+        if (!proof) {
+            console.log('\n')
+            console.log(`${address} NOT included in snapshot`)
+            console.log('\n')
+            return
+        }
+
         console.log('\n')
         console.log('    ',chalk.green.bold(`Merkle Proof for ${address}:`), proof)
         console.log('\n')
 
         // Validate proof on chain 
-        await oraPromise(verifyEarningsProof(LIP, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof on-chain", indent: 2})
+        await oraPromise(verifyEarningsProof(LIP, proof, utils.keccak256(utils.arrayify(leaf))), {text:"Verifying merkle proof against snapshot root", indent: 2})
+
+        console.log('\n')
+        console.log(`${address} included in snapshot`)
+        console.log('\n')
 }
 
 export async function claim(keystoreFile) {
