@@ -107,6 +107,9 @@ export async function getSnapshotRound ():Promise<BigNumber> {
 
 export async function getEarningsRoot(LIP: string) {
     try {
+        if (process.env.SNAPSHOT_ROOT) {
+            return process.env.SNAPSHOT_ROOT
+        }
         return await merkleSnapshot.snapshot(utils.keccak256(utils.toUtf8Bytes(LIP)))
     } catch(err) {
         return err
